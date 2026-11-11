@@ -103,6 +103,10 @@ jobs:
         run: ./tools/exact.sh mac --bundle
       - name: Test native Exact screen
         run: ./tools/exact.sh test macos
+      - name: Test native Git interactions
+        run: |
+          python3 tools/make-fixture.py "$RUNNER_TEMP/exact-git-demo"
+          bun tools/exact-native-smoke.ts "$RUNNER_TEMP/exact-git-demo"
       - name: Package Exact bundle
         run: |
           python3 - <<'PY'

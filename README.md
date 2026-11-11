@@ -58,7 +58,13 @@ python3 tools/make-fixture.py /tmp/git-client-demo
 bun tools/exact-ui-smoke.ts /tmp/git-client-demo
 ```
 
-This tests commit selection, file switching, per-file patches, unified/split switching and pagination through a test-only data seam. It does **not** establish native Mac process integration. On a Mac, additionally run the manual checklist in [docs/COMPARISON.md](docs/COMPARISON.md) for each app. Source execution is provided; signed/notarized release packaging is not included.
+This tests commit selection, file switching, per-file patches, unified/split switching and pagination through a test-only data seam. It does **not** establish native Mac process integration. To test the unchanged production data module on a Mac, with real Git and a scripted folder-dialog result:
+
+```sh
+bun tools/exact-native-smoke.ts /tmp/git-client-demo
+```
+
+This checks opening, commit/file selection, actual patches, diff modes, pagination, empty/root commits and refresh through the native host. The real system folder-dialog interaction still needs manual checking. On a Mac, additionally run the manual checklist in [docs/COMPARISON.md](docs/COMPARISON.md) for each app. Source execution is provided; signed/notarized release packaging is not included.
 
 [The comparison document](docs/COMPARISON.md) records sources, easy and difficult parts, tradeoffs, and validation evidence. macOS runtime behavior must be checked on a Mac; Linux compilation is recorded separately.
 
