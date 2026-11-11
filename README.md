@@ -45,7 +45,7 @@ cargo test --locked -p rune-git-core
 cargo test --locked -p git-rune
 cargo check --locked -p git-gpui -p git-rune
 cd apps/exact-client
-bun test git.test.ts
+bun test git.test.ts ../../tools/exact-process.test.ts
 cd ../..
 ./tools/exact.sh contract build app.contract --json --errors-only
 ./tools/exact.sh test web

@@ -4,7 +4,7 @@ import { history, detail, filePatch, type Execute } from './git';
 export const appId = 'dev.runechat.git.exact';
 export const grants = 'process.spawn path:git\nprocess.spawn path:osascript';
 const run: Execute = async (program, args) => {
-  const r = await execFile(program, args, { encoding: 'utf8', timeout: 30000, maxBuffer: 32 * 1024 * 1024 });
+  const r = await execFile(program, args, { encoding: 'utf8', timeout: 30000, maxBuffer: 16 * 1024 * 1024 });
   if (r.code !== 0) throw new Error(String(r.stderr).trim() || `Git exited with ${r.code}`);
   return String(r.stdout);
 };
