@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/git-core", "apps/gpui", "apps/rune"]
-exclude = ["apps/exact-client"]
+exclude = ["apps/exact-client", ".deps/exact"]
 resolver = "2"
 
 [profile.dev]

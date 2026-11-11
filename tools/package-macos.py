@@ -6,6 +6,7 @@ import platform
 import plistlib
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
@@ -53,3 +54,13 @@ arch = platform.machine()
 archive = out / f'Arbor-{args.framework}-macOS-{arch}.zip'
 subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(bundle), str(archive)], check=True)
 print(archive)
+
+# Finder's conventional drag-to-Applications installer, alongside the ZIP.
+image = out / f'Arbor-{args.framework}-macOS-{arch}.dmg'
+with tempfile.TemporaryDirectory(prefix='arbor-dmg-') as staging:
+    stage = Path(staging)
+    subprocess.run(['ditto', str(bundle), str(stage / bundle.name)], check=True)
+    (stage / 'Applications').symlink_to('/Applications', target_is_directory=True)
+    subprocess.run(['hdiutil', 'create', '-volname', name, '-srcfolder', staging,
+                    '-format', 'UDZO', str(image)], check=True)
+print(image)

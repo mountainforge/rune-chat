@@ -4,7 +4,7 @@ Three native macOS Git browsers built with **GPUI Kit**, **Rune**, and **Expo Ex
 
 ## Download a Mac preview
 
-Native `.app` downloads are published by the [macOS workflow](https://github.com/mountainforge/rune-chat/actions/workflows/macos.yml) to [GitHub Releases](https://github.com/mountainforge/rune-chat/releases). Each ZIP contains one app; choose the architecture matching your Mac. These are development previews, ad-hoc signed and not notarized. macOS may require approval in **System Settings → Privacy & Security** at first launch. Git must be installed. Check each release's build status and validation notes.
+Native `.app` downloads are published by the [macOS workflow](https://github.com/mountainforge/rune-chat/actions/workflows/macos.yml) to [GitHub Releases](https://github.com/mountainforge/rune-chat/releases). Open the DMG and drag the app to Applications; choose the architecture matching your Mac. ZIP archives are available too. These are development previews, ad-hoc signed and not notarized. macOS may require approval in **System Settings → Privacy & Security** at first launch. Git must be installed. Check each release's build status and validation notes.
 
 ## Run on a Mac
 

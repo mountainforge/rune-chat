@@ -24,7 +24,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: rust-macos-apps
-          path: dist/*.zip
+          path: |
+            dist/*.dmg
+            dist/*.zip
           if-no-files-found: error
           retention-days: 30
       - uses: actions/upload-artifact@v4
@@ -65,7 +67,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: exact-macos-app
-          path: dist/*.zip
+          path: |
+            dist/*.dmg
+            dist/*.zip
           if-no-files-found: error
           retention-days: 30
   release:
@@ -88,10 +92,10 @@ jobs:
           RELEASE_TAG: macos-preview-${{ github.run_number }}-${{ github.run_attempt }}
         run: |
           cd downloads
-          sha256sum *.zip > SHA256SUMS.txt
+          sha256sum *.dmg *.zip > SHA256SUMS.txt
           cat > release-notes.md <<'EOF'
-          Native macOS development previews. Each archive contains a standalone .app.
-          Extract it, then move the app to Applications. Choose the archive matching your Mac's architecture.
+          Native macOS development previews. Open the DMG and drag the app to Applications.
+          ZIP archives containing the same standalone .app are also included. Choose the download matching your Mac's architecture.
 
           These builds are ad-hoc signed, not Apple Developer ID signed or notarized. macOS may require approval in System Settings > Privacy & Security when first opened.
 
@@ -99,4 +103,4 @@ jobs:
 
           Git must be installed (Apple's Command Line Tools provide it). Minimum intended system: macOS 14; inspect the Exact bundle's Info.plist for its SDK-selected minimum. Preview builds are not optimized release builds.
           EOF
-          gh release create "$RELEASE_TAG" *.zip SHA256SUMS.txt --target "$RELEASE_COMMIT" --prerelease --title "Arbor macOS preview" --notes-file release-notes.md
+          gh release create "$RELEASE_TAG" *.dmg *.zip SHA256SUMS.txt --target "$RELEASE_COMMIT" --prerelease --title "Arbor macOS preview" --notes-file release-notes.md
