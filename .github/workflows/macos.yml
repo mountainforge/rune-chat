@@ -1,5 +1,14 @@
 name: macOS clients
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: Clients to build
+        type: choice
+        options: [all, exact]
+        default: all
 concurrency:
   group: macos-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -7,6 +16,7 @@ permissions:
   contents: read
 jobs:
   rust:
+    if: github.event_name != 'workflow_dispatch' || inputs.client != 'exact'
     name: ${{ matrix.framework }}
     strategy:
       fail-fast: false

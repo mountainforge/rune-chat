@@ -16,5 +16,9 @@ if [[ "$(git -C "$sdk" rev-parse HEAD)" != "$rev" ]]; then
   exit 1
 fi
 export EXACT2="$sdk"
+# Install the pinned tooling before importing the SDK CLI. Otherwise Bun can
+# resolve an auto-installed Playwright version before setup installs the lock,
+# then check for a different Chromium revision than the one it downloads.
+(cd "$sdk" && bun install --frozen-lockfile)
 (cd "$sdk" && bun scripts/exact.mjs setup)
 (cd "$root/apps/exact-client" && bun install --frozen-lockfile && bun exact.mjs update)
