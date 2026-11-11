@@ -7,6 +7,8 @@ from pathlib import Path
 
 repo = str(Path(sys.argv[1]).resolve())
 for kind, title in [('gpui', 'GPUI'), ('rune', 'Rune')]:
+    if len(sys.argv) > 2 and kind != sys.argv[2]:
+        continue
     binary = Path(f'dist/Arbor {title}.app/Contents/MacOS/git-{kind}')
     log = Path(f'dist/{kind}-launch.log')
     with log.open('w') as output:

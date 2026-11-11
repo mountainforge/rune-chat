@@ -1,6 +1,6 @@
 # Three native Git workspaces
 
-This is the comparison record for GPUI Kit, Rune and Expo Exact. Findings cover implementation and tests actually performed. Native macOS execution and performance comparisons still need a Mac.
+This is the comparison record for GPUI Kit, Rune and Expo Exact. Findings cover implementation and tests actually performed. Native macOS CI observations are recorded below; manual Mac interaction and performance comparisons still need a Mac.
 
 ## Common functionality and design
 
@@ -56,14 +56,14 @@ The first GPUI implementation used published GPUI 0.2.2. This revision adopts Ki
 
 ## Validation evidence
 
-- Both Rust applications compile and link on Linux; macOS compilation/execution is not implied.
+- Both Rust applications compile and link on Linux and on the Apple Silicon macOS GitHub runner.
 - Six Rust core tests pass: two cover hunk line numbers, split pairing and binary notices; four use real repositories for empty/invalid paths, roots, Unicode, paging, merges, Git directories, unmerged branch refs, rename records, and isolated literal-path diffs.
 - Rune's UI interaction test passes: open/cancel the folder chooser, choose a real repository, select a commit, then switch between two changed files and check that the patch is replaced. It also switches Unified/Split and checks the state.
 - Five TypeScript Git tests pass with 30 assertions, covering real repositories plus hunk coordinates and split pairing.
 - GPUI Kit was launched under Xvfb with Mesa's software Vulkan driver. The graph and changes workspace was inspected, selecting the binary file changed the diff to Kit's binary summary, and dragging both dividers changed the pane sizes. Prior pagination checks expanded the same fixture from 100 to 105 commits. After the Arbor redesign, live clicking switched between unified/split rendering and changed files; the displayed path and patch changed together.
 - Exact's production Contract compiles without warnings. Its initial-screen test passes and `verify` is clean, including both configured widths, both system appearances, reload and large text. The intentionally light palette is retained in either system appearance. These checks run separately from the populated workspace test.
 - `tools/exact-ui-smoke.ts` captures replies from real Git into a **test-only** data seam, then drives the unchanged production Contract in Chromium. It checks the three panes, switches files and commits, verifies the actual patch reply, switches Unified/Split and loads the remaining history. This tests the populated UI; it does **not** claim that the web runs native processes or that native Mac integration was exercised.
-- The saved macOS CI workflow builds and tests the native targets, but it has not been run from this session. No native macOS screenshots, startup timings or memory measurements are claimed. Lean semantics are not installed; Exact's exploratory property walks are observations rather than proofs.
+- On 11 November 2026, the native Rust builds, six core tests and Rune interaction test passed on GitHub’s macOS 26.7.2 Apple Silicon runner. The ad-hoc signed GPUI and Rune bundles each remained running for ten seconds with a real repository. This establishes compilation, tests and process startup; no native Mac visual interaction, startup timings or memory measurements are claimed. Lean semantics are not installed; Exact's exploratory property walks are observations rather than proofs.
 
 ## Screens inspected
 
@@ -72,6 +72,12 @@ These are Linux captures. Exact's populated image uses the real-Git snapshot sea
 ![GPUI Kit light graph, changed files and diff](gpui-history.png)
 ![Rune light graph, changed files and diff](rune-history.png)
 ![Exact light graph, changed files and diff](exact-workspace.png)
+
+## Downloadable Mac previews
+
+The [macOS workflow](https://github.com/mountainforge/rune-chat/actions/workflows/macos.yml) produces ad-hoc signed development `.app` bundles in DMGs with an Applications shortcut, plus ZIP copies. Successful previews are published to [GitHub Releases](https://github.com/mountainforge/rune-chat/releases), with checksums. Current runner output targets Apple Silicon, not Intel. The builds are not Developer ID signed or notarized. Replaced runs on the same branch are cancelled automatically. GPUI, Rune and Exact build independently; release publication checks for successful app artifacts even when other jobs fail.
+
+The first Exact setup attempt exposed an outer Cargo-workspace discovery error in its vendored Hermes installer. Excluding `.deps/exact` from this repository's Rust workspace resolves that error; the standalone installer workspace was checked locally before retrying. The retry passed this stage but Exact setup ultimately failed because it installed Playwright Chromium revision 1248 and then checked for revision 1254. No Exact Mac app is released yet. GPUI and Rune DMGs were published independently in [preview 3](https://github.com/mountainforge/rune-chat/releases/tag/macos-preview-3-1).
 
 ## Mac evaluation still needed
 
