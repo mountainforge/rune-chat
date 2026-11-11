@@ -1,0 +1,8 @@
+[package]
+name = "git-rune"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rune = { git = "https://github.com/anomalyco/rune", rev = "2a44156b21d63b0342a366b26d9222a6edd4622c", default-features = false, features = ["metal-backend", "native-file-dialog"] }
+rune-git-core = { path = "../../crates/git-core" }

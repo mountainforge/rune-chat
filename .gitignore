@@ -1,0 +1,10 @@
+/target/
+**/target/
+**/node_modules/
+**/.exact/
+.DS_Store
+/.deps/
+
+
+/dist/
+**/__pycache__/

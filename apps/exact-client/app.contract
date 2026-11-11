@@ -1,0 +1,260 @@
+use EmptyState from "exact:content"
+shape Ref
+  label: string
+  kind: number
+  color: string
+shape Commit
+  oid: string
+  author: string
+  date: string
+  subject: string
+  parents: string[]
+  refs: string
+  graph: string
+  graphWidth: number
+  initials: string
+  avatar: string
+  labels: Ref[]
+shape Page
+  head: string
+  commits: Commit[]
+  more: bool
+  error: string
+shape ChangedFile
+  status: string
+  path: string
+  oldPath: string
+  name: string
+  directory: string
+  additions: number
+  deletions: number
+  binary: bool
+shape Detail
+  oid: string
+  author: string
+  email: string
+  date: string
+  parents: string
+  message: string
+  initials: string
+  avatar: string
+  additions: number
+  deletions: number
+  files: ChangedFile[]
+  error: string
+shape PatchLine
+  id: string
+  text: string
+  old: string
+  next: string
+  kind: number
+shape Pair
+  id: string
+  left: PatchLine
+  right: PatchLine
+  full: bool
+shape Patch
+  text: string
+  lines: PatchLine[]
+  pairs: Pair[]
+  error: string
+shape Pick
+  path: string
+  error: string
+routes nav
+  workspace "/"
+component App
+  state split = false
+  state repo = ""
+  state limit = 100
+  state revision = 0
+  state selected = ""
+  state selectedPath = ""
+  state openError = ""
+  resource history = history(repo, limit, revision) as shape Page else empty()
+  derive oid = selected != "" ? selected : match first(history.commits) { case some(c) => c.oid, case none => "" }
+  resource detail = detail(repo, oid) as shape Detail else empty()
+  derive file = match first(detail.files.filter(f => f.path == selectedPath)) { case some(f) => some(f), case none => first(detail.files) }
+  derive filePath = match file { case some(f) => f.path, case none => "" }
+  derive oldPath = match file { case some(f) => f.oldPath, case none => "" }
+  resource patch = filePatch(repo, detail.oid, filePath, oldPath) as shape Patch else empty()
+  mutation picked as shape Pick then afterPick
+  action open
+    send picked = pickRepository()
+  action afterPick
+    match picked
+      case some(p)
+        openError = p.error
+        if p.path != ""
+          repo = p.path
+          limit = 100
+          selected = ""
+          selectedPath = ""
+      case none
+        openError = "Could not open the folder chooser."
+  action refresh
+    revision = revision + 1
+    limit = 100
+    selected = ""
+    selectedPath = ""
+  action more
+    limit = limit + 100
+  action select(id: string)
+    selected = id
+    selectedPath = ""
+  action unified
+    split = false
+  action sideBySide
+    split = true
+  action chooseFile(path: string)
+    selectedPath = path
+  derive repoName = repo == "" ? "Arbor" : repo.split("/").filter(p => p != "").slice(-1).join("")
+  derive title = detail.message.split("\n").slice(0, 1).join("")
+  derive body = detail.message.split("\n").slice(1).join("\n").trim()
+  view
+    main testId="app" width="100%" height="100%" color-scheme="light" font-size="0.8125rem" display="flex" flex-direction="column" color="var(--ink)" background-color="var(--canvas)"
+      header appearance="none" display="flex" flex-wrap="wrap" align-items="center" gap=12 padding="10px 16px" background-color="var(--surface)" border-bottom="1px solid var(--line)"
+        image "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect x='.5' y='.5' width='29' height='29' rx='8.5' fill='%23f7f6f2' stroke='%23d5d1c7'/%3E%3Cpath d='M10 7v16' stroke='%239a5a00' stroke-width='2.2'/%3E%3Cpath d='M10 19C10 14 20 15 20 9' fill='none' stroke='%2306748f' stroke-width='2.2'/%3E%3Ccircle cx='10' cy='22.5' r='2.6' fill='%239a5a00'/%3E%3Ccircle cx='20' cy='9' r='2.6' fill='%2306748f'/%3E%3C/svg%3E" width=30 height=30 alt="Arbor"
+        column flex="0 1 16rem" min-width=0 gap=2
+          text repoName role="heading" aria-level=1 font-size="0.9375rem" font-weight=600
+          text (repo == "" ? "Open a local repository" : repo) font-size="0.6875rem" color="var(--faint)" white-space="nowrap" overflow="hidden" text-overflow="ellipsis" testId="repo"
+        text (history.head == "" ? "All branches" : history.head) padding="5px 10px" border-radius=8 border="1px solid var(--line-strong)" background-color="var(--raised)" color="var(--accent)" font-family="monospace" font-size="0.75rem"
+        row flex=1
+        button appearance="none" padding="6px 12px" border-radius=8 border="1px solid var(--line-strong)" background-color="var(--raised)" color="var(--muted)" press=open disabled=(pending(picked) or pending(history)) testId="open"
+          text "Open repository"
+        button appearance="none" padding="6px 12px" border-radius=8 border="1px solid var(--line-strong)" background-color="var(--surface)" color="var(--muted)" press=refresh disabled=(repo == "" or pending(history)) testId="refresh"
+          text "Refresh"
+      row padding="10px 16px" gap=18 flex-wrap="wrap" align-items="center" background-color="var(--surface)" border-bottom="1px solid var(--line)"
+        text "History" font-weight=600
+        text `${history.commits.length} ${history.commits.length == 1 ? "commit" : "commits"}` color="var(--faint)" font-size="0.75rem" testId="count"
+        text "All branches" color="var(--faint)" font-size="0.75rem"
+      if openError != ""
+        text openError color="-exact-system-red" padding=12 testId="open-error"
+      if history.error != ""
+        text history.error color="-exact-system-red" padding=12 testId="history-error"
+      if repo == ""
+        EmptyState(symbol="symbol:document", title="Your repository, in focus", message="Open a repository to explore its branches, commits and file diffs.")
+      else
+        column flex=1 min-height=0 background-color="var(--surface)" testId="history-pane"
+          if failed(history)
+            text "Could not read history. Try Refresh." testId="history-failed"
+          scroll flex=1 min-height=0 overflow-x="auto"
+            column min-width="48.75rem"
+              row min-height="1.75rem" align-items="center" padding-left=8 padding-right=14 border-bottom="1px solid var(--line)" font-size="0.65625rem" color="var(--faint)"
+                text "GRAPH" width=(match first(history.commits) { case some(c) => c.graphWidth, case none => 76 })
+                text "DESCRIPTION" flex=1
+                text "AUTHOR" width="9.75rem"
+                text "DATE" width="6.5rem"
+                text "COMMIT" width="5rem"
+              for c in history.commits key=c.oid
+                row min-height="1.875rem" align-items="center" padding-left=8 padding-right=14 press=select(c.oid) role="button" tabindex=0 aria-label=c.subject
+                  background-color=(oid == c.oid ? "var(--selection)" : "var(--surface)") testId=`commit-${c.oid}`
+                  image c.graph width=`${c.graphWidth / 16}rem` height="1.875rem" alt="Commit ancestry graph" flex-shrink=0
+                  row flex=1 min-width=0 gap=6 align-items="center"
+                    for ref in c.labels key=ref.label
+                      text ref.label padding="2px 6px" border-radius=6 color=(ref.kind == 0 ? "var(--on-accent)" : ref.color) background-color=(ref.kind == 0 ? ref.color : "var(--raised)") border="1px solid var(--line)" font-size="0.6875rem" white-space="nowrap"
+                    text c.subject white-space="nowrap" text-overflow="ellipsis" overflow="hidden" flex=1 min-width=0 font-weight=(oid == c.oid ? 600 : 400)
+                  row width="9.75rem" gap=8 align-items="center"
+                    row width="1.25rem" height="1.25rem" border-radius="50%" background-color=c.avatar align-items="center" justify-content="center" flex-shrink=0
+                      text c.initials font-size="0.5625rem" color="var(--ink)" font-weight=600
+                    text c.author flex=1 min-width=0 white-space="nowrap" overflow="hidden" text-overflow="ellipsis" color="var(--muted)" font-size="0.75rem"
+                  text c.date.slice(0,10) width="6.5rem" color="var(--faint)" font-size="0.75rem"
+                  text c.oid.slice(0,8) width="5rem" color="var(--faint)" font-size="0.75rem" font-family="monospace"
+          if history.more
+            row padding="3px 12px" border-top="1px solid var(--line)"
+              button press=more disabled=pending(history) testId="more"
+                text "Load more commits"
+          if history.commits.length == 0 and not pending(history)
+            text "No commits in this repository." padding=20
+        row height=9 align-items="center" justify-content="center" background-color="var(--canvas)"
+          row width=44 height=3 border-radius=2 background-color="var(--line-strong)"
+        row flex=1 min-height=0 background-color="var(--surface)" border-top="1px solid var(--line)" testId="changes-pane"
+          column width="25%" min-width="16rem" max-width="26rem" min-height=0 border-right="1px solid var(--line)" testId="files-pane"
+            if detail.oid != "" and not pending(detail)
+              scroll max-height=250 padding="16px 18px" border-bottom="1px solid var(--line)"
+                column gap=10
+                  text title font-size="0.9375rem" font-weight=600 testId="message"
+                  if body != ""
+                    text body white-space="pre-wrap" color="var(--muted)" font-size="0.78125rem" line-height=1.5
+                  row gap=8 align-items="center" flex-wrap="wrap"
+                    row width="1.25rem" height="1.25rem" border-radius="50%" background-color=detail.avatar align-items="center" justify-content="center"
+                      text detail.initials font-size="0.5625rem" font-weight=600
+                    text detail.author font-size="0.75rem" testId="author"
+                    text detail.date.slice(0,10) color="var(--faint)" font-size="0.6875rem"
+                  row gap=6 align-items="center" flex-wrap="wrap"
+                    text detail.oid.slice(0,8) padding="4px 7px" border-radius=6 border="1px solid var(--line-strong)" background-color="var(--raised)" font-size="0.6875rem" font-family="monospace" title=detail.oid
+                    for parent in detail.parents.split(" ").filter(p => p != "") key=parent
+                      text "Parent" color="var(--faint)" font-size="0.6875rem"
+                      button appearance="none" padding="4px 7px" border-radius=6 border="1px solid var(--line-strong)" background-color="var(--raised)" press=select(parent)
+                        text parent.slice(0,8) font-size="0.6875rem" font-family="monospace"
+              row padding="10px 18px 6px" gap=8 align-items="center" font-size="0.65625rem"
+                text `${detail.files.length} ${detail.files.length == 1 ? "FILE" : "FILES"} CHANGED` color="var(--faint)" flex=1
+                text `+${detail.additions}` color="var(--added)"
+                text `−${detail.deletions}` color="var(--deleted)"
+              scroll flex=1 min-height=0
+                column padding="0 6px 8px"
+                  for f, i in detail.files key=f.path
+                    row padding="6px 8px" gap=8 min-height="2.125rem" align-items="center" press=chooseFile(f.path) role="button" tabindex=0 aria-label=f.path testId=`file-${i}` border-radius=8
+                      border=(filePath == f.path ? "1px solid var(--selection-ring)" : "1px solid var(--surface)") background-color=(filePath == f.path ? "var(--selection)" : "var(--surface)")
+                      text f.status.slice(0,1) padding="3px 5px" border-radius=5 font-family="monospace" font-size="0.625rem" color=(f.status.startsWith("A") ? "var(--added)" : f.status.startsWith("D") ? "var(--deleted)" : "var(--modified)") background-color="var(--chip)"
+                      column flex=1 min-width=0 gap=2
+                        text f.name font-size="0.75rem" font-weight=500 white-space="nowrap" overflow="hidden" text-overflow="ellipsis"
+                        text f.directory font-size="0.6875rem" color="var(--faint)" white-space="nowrap" overflow="hidden" text-overflow="ellipsis"
+                      text (f.binary ? "Binary" : `+${f.additions} −${f.deletions}`) font-size="0.6875rem" font-family="monospace" color="var(--muted)"
+          column flex=1 min-width=0 min-height=0 testId="diff-pane"
+            row min-height="3.25rem" padding="8px 16px" gap=10 flex-wrap="wrap" align-items="center" border-bottom="1px solid var(--line)"
+              column flex="1 1 8rem" min-width=0
+                text (filePath == "" ? "No changed files" : filePath) font-family="monospace" font-size="0.8125rem" font-weight=600 white-space="nowrap" overflow="hidden" text-overflow="ellipsis" testId="file-path"
+              match file
+                case some(f)
+                  text `+${f.additions}` color="var(--added)" font-size="0.6875rem" font-family="monospace"
+                  text `−${f.deletions}` color="var(--deleted)" font-size="0.6875rem" font-family="monospace"
+                case none
+                  row
+              row padding=2 border-radius=8 background-color="var(--chip)" border="1px solid var(--line)"
+                button appearance="none" padding="5px 10px" border-radius=6 border=(split ? "1px solid var(--chip)" : "1px solid var(--line-strong)") background-color=(split ? "var(--chip)" : "var(--surface)") press=unified aria-pressed=(not split) testId="unified"
+                  text "Unified" font-size="0.75rem"
+                button appearance="none" padding="5px 10px" border-radius=6 border=(split ? "1px solid var(--line-strong)" : "1px solid var(--chip)") background-color=(split ? "var(--surface)" : "var(--chip)") press=sideBySide aria-pressed=split testId="split"
+                  text "Split" font-size="0.75rem"
+            scroll flex=1 min-height=0 overflow-x="auto"
+              if pending(detail) or pending(patch)
+                text "Reading file…" padding=16
+              else if failed(detail) or failed(patch) or patch.error != "" or detail.error != ""
+                text (detail.error != "" ? detail.error : patch.error != "" ? patch.error : "Could not read this diff.") padding=16 color="-exact-system-red"
+              else if detail.files.length == 0
+                text "This commit has no file changes against its first parent." padding=16
+              else
+                column min-width="50rem" testId="patch"
+                  if not split
+                    for line in patch.lines key=line.id
+                      CodeLine(line=line, split=false, right=false)
+                  else
+                    for pair in patch.pairs key=pair.id
+                      if pair.full
+                        CodeLine(line=pair.left, split=false, right=false)
+                      else
+                        row
+                          column flex=1 min-width="25rem"
+                            CodeLine(line=pair.left, split=true, right=false)
+                          column flex=1 min-width="25rem" border-left="1px solid var(--line)"
+                            CodeLine(line=pair.right, split=true, right=true)
+      text (pending(history) or pending(picked) or pending(patch) ? "Reading repository…" : "Read-only · All refs + HEAD · Merge changes against first parent") padding="5px 12px" color="var(--muted)" font-size="0.6875rem" border-top="1px solid var(--line)" testId="status"
+
+component CodeLine
+  props
+    line: PatchLine
+    split: bool
+    right: bool
+  view
+    row min-height="1.3125rem" font-family="monospace" font-size="0.75rem" color=(line.kind == 1 ? "var(--added)" : line.kind == 2 ? "var(--deleted)" : line.kind == 3 ? "var(--diff-hunk-ink)" : "var(--ink)")
+      background-color=(line.kind == 1 ? "var(--diff-add-fill)" : line.kind == 2 ? "var(--diff-delete-fill)" : line.kind == 3 ? "var(--diff-hunk-fill)" : line.kind == 5 ? "var(--raised)" : "var(--surface)")
+      if line.kind >= 3 and line.kind != 5
+        text line.text padding-left=16 padding-right=16 white-space="pre"
+      else
+        if not split
+          text line.old width="2.875rem" text-align="right" padding-right=10 color="var(--faint)"
+          text line.next width="2.875rem" text-align="right" padding-right=10 color="var(--faint)"
+        else
+          text (right ? line.next : line.old) width="2.875rem" text-align="right" padding-right=10 color="var(--faint)"
+        text (line.kind == 1 ? "+" : line.kind == 2 ? "−" : " ") width="1.125rem"
+        text line.text white-space="pre" padding-right=24

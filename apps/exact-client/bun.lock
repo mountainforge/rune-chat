@@ -1,0 +1,15 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "exact-client",
+      "dependencies": {
+        "@exact/child-process": "file:../../.deps/exact/packages/child-process",
+      },
+    },
+  },
+  "packages": {
+    "@exact/child-process": ["@exact/child-process@file:../../.deps/exact/packages/child-process", {}],
+  }
+}

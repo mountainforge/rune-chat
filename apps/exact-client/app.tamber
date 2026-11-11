@@ -1,0 +1,29 @@
+// Light variant of the user's Arbor design artifact.
+tamber arbor
+
+theme
+  ink = #191b20  scheme=fixed
+  surface = #ffffff  scheme=fixed
+  canvas = #eceae4  scheme=fixed
+  line = #e4e1d9  scheme=fixed
+  line-strong = #d5d1c7  scheme=fixed
+  muted = #525865  scheme=fixed
+  faint = #5f6572  scheme=fixed
+  accent = #06748f  scheme=fixed
+  on-accent = #ffffff  scheme=fixed
+  raised = #f7f6f2  scheme=fixed
+  toolbar = #ffffff  scheme=fixed
+  chip = #f0eee8  scheme=fixed
+  selection = #ebf4f6  scheme=fixed
+  selection-ring = #8eb8c2  scheme=fixed
+  branch-ink = #9a5a00  scheme=fixed
+  branch-fill = #f7efe0  scheme=fixed
+  divider = #d5d1c7  scheme=fixed
+  sidebar = #ffffff  scheme=fixed
+  added = #1b6e2d  scheme=fixed
+  deleted = #ae2016  scheme=fixed
+  modified = #9a5a00  scheme=fixed
+  diff-hunk-ink = #6a3fc7  scheme=fixed
+  diff-add-fill = #eaf6ec  scheme=fixed
+  diff-delete-fill = #fcedeb  scheme=fixed
+  diff-hunk-fill = #f4f0fc  scheme=fixed

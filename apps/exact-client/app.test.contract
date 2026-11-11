@@ -1,0 +1,4 @@
+test "initial screen explains how to open a repository"
+  expect tree has "open"
+  expect tree has "refresh"
+  expect tree missing "message"

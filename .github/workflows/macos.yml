@@ -1,0 +1,102 @@
+name: macOS clients
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  rust:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo build --locked -p git-gpui -p git-rune
+      - run: cargo test --locked -p rune-git-core -p git-rune
+      - run: |
+          python3 tools/package-macos.py gpui
+          python3 tools/package-macos.py rune
+          python3 tools/make-fixture.py "$RUNNER_TEMP/git-ui-demo"
+          python3 tools/smoke-macos.py "$RUNNER_TEMP/git-ui-demo"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-macos-apps
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rust-launch-logs
+          path: dist/*.log
+          if-no-files-found: ignore
+  exact:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      EXACT_FEEDBACK: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: ./tools/setup-exact.sh
+      - run: bun test apps/exact-client/git.test.ts
+      - run: ./tools/exact.sh contract build app.contract --json --errors-only
+      - run: ./tools/exact.sh test macos
+      - name: Build native Exact bundle
+        run: ./tools/exact.sh mac --bundle
+      - name: Package Exact bundle
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+          bundles = list(Path('.').glob('**/clients/*/dev.runechat.git.exact/macos/*.app'))
+          if len(bundles) != 1:
+              raise SystemExit(f'Expected one Exact bundle, found {bundles}')
+          subprocess.run(['python3', 'tools/package-macos.py', 'exact', '--exact-app', str(bundles[0])], check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-macos-app
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
+  release:
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (needs.rust.result == 'success' || needs.exact.result == 'success')
+    needs: [rust, exact]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-macos-app*'
+          path: downloads
+          merge-multiple: true
+      - name: Publish downloadable preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_TAG: macos-preview-${{ github.run_number }}-${{ github.run_attempt }}
+        run: |
+          cd downloads
+          sha256sum *.zip > SHA256SUMS.txt
+          cat > release-notes.md <<'EOF'
+          Native macOS development previews. Each archive contains a standalone .app.
+          Extract it, then move the app to Applications. Choose the archive matching your Mac's architecture.
+
+          These builds are ad-hoc signed, not Apple Developer ID signed or notarized. macOS may require approval in System Settings > Privacy & Security when first opened.
+
+          The Rust apps passed Git tests and a packaged-process startup check on the macOS runner. Exact's initial-screen native test runs before packaging. These checks do not replace manual interaction testing on your Mac.
+
+          Git must be installed (Apple's Command Line Tools provide it). Minimum intended system: macOS 14; inspect the Exact bundle's Info.plist for its SDK-selected minimum. Preview builds are not optimized release builds.
+          EOF
+          gh release create "$RELEASE_TAG" *.zip SHA256SUMS.txt --target "$RELEASE_COMMIT" --prerelease --title "Arbor macOS preview" --notes-file release-notes.md
