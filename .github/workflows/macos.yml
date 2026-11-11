@@ -92,7 +92,7 @@ jobs:
             ~/.cache/exact/apple-modules
             ~/.cache/exact/apple-crates
             ~/Library/Caches/ms-playwright
-          key: exact-${{ runner.os }}-${{ runner.arch }}-d5a51c9-bun1.4.2-v1-${{ hashFiles('tools/setup-exact.sh', 'apps/exact-client/**') }}
+          key: exact-${{ runner.os }}-${{ runner.arch }}-d5a51c9-bun1.4.2-v1-${{ hashFiles('tools/setup-exact.sh', 'tools/patch-exact.py', 'apps/exact-client/**') }}
           restore-keys: |
             exact-${{ runner.os }}-${{ runner.arch }}-d5a51c9-bun1.4.2-v1-
       - run: ./tools/setup-exact.sh

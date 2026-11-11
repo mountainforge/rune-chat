@@ -15,6 +15,7 @@ if [[ "$(git -C "$sdk" rev-parse HEAD)" != "$rev" ]]; then
   echo "Exact SDK revision differs from the tested pin; use a separate checkout or restore it yourself." >&2
   exit 1
 fi
+python3 "$root/tools/patch-exact.py" "$sdk"
 export EXACT2="$sdk"
 # Install the pinned tooling before importing the SDK CLI. Otherwise Bun can
 # resolve an auto-installed Playwright version before setup installs the lock,
