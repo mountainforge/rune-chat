@@ -27,6 +27,14 @@ beforeAll(async () => {
   globals.__exact_process_seam = {
     async request(url: string, init: { body: string }) {
       if (url !== 'exact-process:') throw new Error(`Unexpected transport: ${url}`);
+      // Pinned Apple executor_core.rs: the independent lane has 68 MiB
+      // plus header allowance; process replies reserve twice their ceiling.
+      const ceiling = (init as any).exactIndependentHttp.maxResponseBytes;
+      const laneBytes = (4 + 64) * 1024 * 1024 + 2 * 64 * 1024;
+      const charge = 2 * ceiling + 2 * 64 * 1024 + Buffer.byteLength(init.body) + 4096;
+      if (charge > laneBytes) {
+        return { status: 403, text: async () => "native response ceiling exceeds the lane's byte budget" };
+      }
       const body = JSON.parse(init.body);
       if (body.kind !== 'execFile') throw new Error(`Unexpected operation: ${body.kind}`);
       let stdout = '', stderr = '', code = 0;
