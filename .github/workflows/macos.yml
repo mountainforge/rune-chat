@@ -100,7 +100,7 @@ jobs:
       - run: bun test apps/exact-client/git.test.ts
       - run: ./tools/exact.sh contract build app.contract --json --errors-only
       - name: Build native Exact bundle
-        run: ./tools/exact.sh mac --bundle
+        run: bun tools/build-exact-macos.mjs
       - name: Test native Exact screen
         run: ./tools/exact.sh test macos
       - name: Test native Git interactions

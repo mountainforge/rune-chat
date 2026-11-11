@@ -39,6 +39,7 @@ writeFileSync(test, `test "native Git workspace opens, selects files and commits
   size 1440x900
   tap "open"
   clock data
+  expect state openError == ""
   expect state repo == ${JSON.stringify(repo)}
   expect text "count" == "100 commits"
   expect text "file-path" == ${JSON.stringify(first.files[0].path)}
@@ -79,7 +80,20 @@ try {
     env: { ...process.env, EXACT2: join(root, '.deps/exact'), EXACT_FEEDBACK: '0' },
     stdout: 'inherit', stderr: 'inherit',
   });
-  if (await child.exited) process.exitCode = 1;
+  if (await child.exited) {
+    process.exitCode = 1;
+    if (!checkOnly) {
+      console.error('Native test failed; collecting production state and host diagnostics.');
+      const diagnostic = Bun.spawn([process.execPath, 'exact.mjs', 'agent', 'macos',
+        '--process', 'path:git=real', '--process', `path:osascript=script:${picker}`,
+        'tap open', 'clock data', 'state', 'logs --all', 'tree'], {
+        cwd: join(root, 'apps/exact-client'),
+        env: { ...process.env, EXACT2: join(root, '.deps/exact'), EXACT_FEEDBACK: '0' },
+        stdout: 'inherit', stderr: 'inherit',
+      });
+      await diagnostic.exited;
+    }
+  }
 } finally {
   rmSync(temporary, { recursive: true, force: true });
 }

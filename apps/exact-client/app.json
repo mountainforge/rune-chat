@@ -1,20 +1,22 @@
 {
   "$schema": "../../.deps/exact/scripts/app.schema.json",
-  "name": "Git \u00b7 Exact",
+  "name": "Git · Exact",
   "short_name": "Exact Client",
   "id": "dev.runechat.git.exact",
   "start_url": "/",
   "display": "standalone",
   "app": {
     "id": "dev.runechat.git.exact",
-    "name": "Git \u00b7 Exact"
+    "name": "Git · Exact"
   },
   "host": {
-    "web": {}
+    "web": {},
+    "macos": {}
   },
   "deploy": {
     "store": {
-      "web": "0"
+      "web": "0",
+      "macos": "0"
     }
   }
 }
