@@ -67,12 +67,42 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
+      - name: Check out pinned Exact SDK
+        uses: actions/checkout@v4
+        with:
+          repository: expo/exact
+          ref: d5a51c9bb37efeecdd81fa0539adc2fe611d91b6
+          path: .deps/exact
+          persist-credentials: false
+      - name: Restore Exact build and runtime cache
+        id: exact-cache
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: |
+            .deps/exact/target
+            apps/exact-client/target
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/hermes-lean-sys
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+            ~/.cache/exact/binaryen
+            ~/.cache/exact/apple-modules
+            ~/.cache/exact/apple-crates
+            ~/Library/Caches/ms-playwright
+          key: exact-${{ runner.os }}-${{ runner.arch }}-d5a51c9-bun1.4.2-v1-${{ hashFiles('tools/setup-exact.sh', 'apps/exact-client/**') }}
+          restore-keys: |
+            exact-${{ runner.os }}-${{ runner.arch }}-d5a51c9-bun1.4.2-v1-
       - run: ./tools/setup-exact.sh
+        id: setup
       - run: bun test apps/exact-client/git.test.ts
       - run: ./tools/exact.sh contract build app.contract --json --errors-only
-      - run: ./tools/exact.sh test macos
       - name: Build native Exact bundle
         run: ./tools/exact.sh mac --bundle
+      - name: Test native Exact screen
+        run: ./tools/exact.sh test macos
       - name: Package Exact bundle
         run: |
           python3 - <<'PY'
@@ -91,6 +121,26 @@ jobs:
             dist/*.zip
           if-no-files-found: error
           retention-days: 30
+      # Retain a successful SDK setup even when a later native check fails.
+      - name: Save Exact build and runtime cache
+        if: always() && !cancelled() && steps.setup.conclusion == 'success' && steps.exact-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: |
+            .deps/exact/target
+            apps/exact-client/target
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/hermes-lean-sys
+            ~/.cargo/bin/wasm-bindgen
+            ~/.cargo/bin/wasm-bindgen-test-runner
+            ~/.cargo/bin/wasm2es6js
+            ~/.cache/exact/binaryen
+            ~/.cache/exact/apple-modules
+            ~/.cache/exact/apple-crates
+            ~/Library/Caches/ms-playwright
+          key: ${{ steps.exact-cache.outputs.cache-primary-key }}
   release:
     if: always() && !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: [rust, exact]
